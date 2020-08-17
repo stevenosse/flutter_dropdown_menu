@@ -1,4 +1,5 @@
-import 'package:dropdown_menu/src/dropdown_menu_action.dart';
+import 'package:dropdown_menu/dropdown_menu.dart';
+import 'package:dropdown_menu/src/dropdown_body.dart';
 import 'package:flutter/material.dart';
 
 class DropdownMenu extends StatefulWidget {
@@ -18,7 +19,6 @@ class DropdownMenu extends StatefulWidget {
 }
 
 class _DropdownMenuState extends State<DropdownMenu> {
-  FocusNode _focusNode;
   OverlayState overlayState;
   OverlayEntry overlayEntry;
   double overlayX;
@@ -30,10 +30,6 @@ class _DropdownMenuState extends State<DropdownMenu> {
 
   @override
   void initState() {
-    _focusNode = FocusNode();
-    _focusNode.addListener(() {
-      print("focus changed");
-    });
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       overlayState = Overlay.of(context);
 
@@ -49,6 +45,14 @@ class _DropdownMenuState extends State<DropdownMenu> {
     overlayY = position.dy + 50;
   }
 
+  void updateOverlay() {
+    if (isOverlayActive) {
+      hideOverlay();
+    } else {
+      showOverlay();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -58,7 +62,7 @@ class _DropdownMenuState extends State<DropdownMenu> {
         child: InkWell(
           onTap: () {
             if (isOverlayActive == false) {
-              _showOverlay();
+              showOverlay();
               setState(() {
                 isOverlayActive = true;
               });
@@ -76,93 +80,44 @@ class _DropdownMenuState extends State<DropdownMenu> {
     overlayEntry?.remove();
     setState(() {
       isOverlayActive = false;
+      overlayEntry = null;
     });
   }
 
-  _showOverlay() {
+  showOverlay() {
     overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         final Size size = MediaQuery.of(context).size;
         return Positioned(
-            top: overlayY,
-            right: overlayX >= size.width * (2 / 3) ? 5 : overlayX,
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onTapDown: (TapDownDetails details) {
-                    final RenderBox referenceBox = context.findRenderObject();
-                    Offset tapPosition =
-                    referenceBox.globalToLocal(details.globalPosition);
-
-                    if (tapPosition.dx <= overlayX) {
-                      hideOverlay();
-                    }
+          top: 0,
+          left: 0,
+          child: Stack(
+            children: [
+              GestureDetector(
+                onTapDown: (TapDownDetails details) {
+                  hideOverlay();
+                },
+                child: Container(
+                  width: size.width,
+                  height: size.height,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: overlayY,
+                right: overlayX >= size.width * (2 / 3) ? 5 : overlayX,
+                child: DropdownMenuBody(
+                  onClose: () {
+                    this.hideOverlay();
                   },
-                  child: Container(
-                    width: size.width,
-                    height: size.height,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                    ),
-                  ),
+                  actions: widget.dropdownMenuActions,
                 ),
-                Positioned(
-                  right: 0,
-                  child: Container(
-                    width: size.width * 0.5,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 3.0,
-                          color: Colors.black.withOpacity(0.3),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        children: [
-                          ...widget.dropdownMenuActions.map((e) {
-                            if (e.isDivider) return Divider();
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  e.onTap();
-                                  hideOverlay();
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10.0,
-                                    horizontal: 4.0,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      if (e.icon != null) ...[
-                                        e.icon,
-                                        SizedBox(width: 10),
-                                      ],
-                                      Text(
-                                        e.title,
-                                        style: e.titleStyle ??
-                                            Theme.of(context)
-                                                .textTheme
-                                                .bodyText2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          })
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ));
+              ),
+            ],
+          ),
+        );
       },
     );
     overlayState.insert(overlayEntry);
@@ -170,10 +125,10 @@ class _DropdownMenuState extends State<DropdownMenu> {
 
   @override
   void dispose() {
-    _focusNode?.removeListener(() {});
     if (overlayEntry != null) {
       overlayEntry.remove();
     }
     super.dispose();
   }
 }
+

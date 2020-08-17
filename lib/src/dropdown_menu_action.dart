@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-class DropdownMenuAction<T> {
+class DropdownMenuAction {
   final String title;
   final Widget icon;
   final TextStyle titleStyle;
@@ -15,3 +14,4 @@ class DropdownMenuAction<T> {
     this.isDivider = false,
   });
 }
+
